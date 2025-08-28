@@ -9,11 +9,11 @@ namespace HUBookReadingSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : AppControllerBase
+    public class AccountController : AppControllerBase
     {
-        private readonly ILogger<AuthController> _logger;
+        private readonly ILogger<AccountController> _logger;
 
-        public AuthController(AppDbContext context, ILogger<AuthController> logger) : base(context) 
+        public AccountController(AppDbContext context, ILogger<AccountController> logger) : base(context) 
         { 
             _logger = logger;
         }
