@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# App setting (connection strings vs.)
+appsettings.json
+appsettings.*.json
+
+# ASP.NET Core secrets
+secrets.json
