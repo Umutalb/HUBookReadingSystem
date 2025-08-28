@@ -6,6 +6,8 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
@@ -73,6 +75,14 @@ builder.Services.Configure<ForwardedHeadersOptions>(opts =>
 });
 
 var app = builder.Build();
+
+
+// Database migration
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 // Proxy header’larýný en baþta iþle
 app.UseForwardedHeaders();
