@@ -6,11 +6,9 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-
+// Railway port binding
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-
 
 // --- DB (PostgreSQL / Railway) ---
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -28,7 +26,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Hazal & Umut Book Reading API",
         Version = "v1",
-        Description = "Kitap okuma takip sistemi"
+        Description = "Book reading tracking system"
     });
 });
 
@@ -40,14 +38,13 @@ var staticOrigins = new[]
     "http://localhost:5501",
     "http://127.0.0.1:5500",
     "http://localhost:5500",
-    "https://hubooksystem.netlify.app" // ana prod domainin
+    "https://hubooksystem.netlify.app" // prod frontend
 };
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(CorsPolicy, policy =>
     {
         policy
-            // preview deploy’lar için *.netlify.app hostlarýný kabul et
             .SetIsOriginAllowed(origin =>
             {
                 try
@@ -64,30 +61,37 @@ builder.Services.AddCors(options =>
     });
 });
 
+// --- Cookie Policy-
+builder.Services.Configure<CookiePolicyOptions>(opts =>
+{
+    
+    opts.MinimumSameSitePolicy = SameSiteMode.None;     // SameSite=None
+    opts.Secure = CookieSecurePolicy.Always;            // Secure
+    
+    opts.CheckConsentNeeded = _ => false;
+});
+
 // --- Forwarded headers (Railway/Proxy) ---
 builder.Services.Configure<ForwardedHeadersOptions>(opts =>
 {
     opts.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor;
-    // Eðer spesifik proxy IP’ni bilmiyorsan aþaðýyý EKLEME.
-    // opts.KnownProxies.Add(IPAddress.Parse("x.x.x.x"));
     opts.RequireHeaderSymmetry = false;
-    opts.ForwardLimit = null; // zincir halinde proxy'lerde sorun olmasýn
+    opts.ForwardLimit = null; // proxy 
 });
 
 var app = builder.Build();
 
 
-// Database migration
+app.UseForwardedHeaders();
+
+// Railway’de DB auto-migrate
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
 
-// Proxy header’larýný en baþta iþle
-app.UseForwardedHeaders();
 
-// Prod hardening: Swagger kapat + global exception + HSTS
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -95,17 +99,23 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseExceptionHandler("/error"); // basit 500 JSON döndüren endpoint’in olabilir (opsiyonel)
+    app.UseExceptionHandler("/error");
     app.UseHsts();
 }
 
-// HTTPS yönlendirme + CORS
+
 app.UseHttpsRedirection();
+
+
 app.UseCors(CorsPolicy);
+
+
+app.UseCookiePolicy();
 
 app.UseAuthorization();
 
 app.MapControllers();
+
 
 app.MapGet("/health", () => "OK");
 
