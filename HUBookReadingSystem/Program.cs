@@ -6,9 +6,11 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Railway port binding
+
+
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 
 // --- DB (PostgreSQL / Railway) ---
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -18,7 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
 // --- Controllers ---
 builder.Services.AddControllers();
 
-// --- Swagger (sadece Dev) ---
+// --- Swagger (Dev) ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -26,7 +28,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Hazal & Umut Book Reading API",
         Version = "v1",
-        Description = "Book reading tracking system"
+        Description = "Kitap okuma takip sistemi"
     });
 });
 
@@ -38,7 +40,7 @@ var staticOrigins = new[]
     "http://localhost:5501",
     "http://127.0.0.1:5500",
     "http://localhost:5500",
-    "https://hubooksystem.netlify.app" // prod frontend
+    "https://hubooksystem.netlify.app" 
 };
 builder.Services.AddCors(options =>
 {
@@ -61,35 +63,26 @@ builder.Services.AddCors(options =>
     });
 });
 
-// --- Cookie Policy-
-builder.Services.Configure<CookiePolicyOptions>(opts =>
-{
-    
-    opts.MinimumSameSitePolicy = SameSiteMode.None;     // SameSite=None
-    opts.Secure = CookieSecurePolicy.Always;            // Secure
-    
-    opts.CheckConsentNeeded = _ => false;
-});
-
 // --- Forwarded headers (Railway/Proxy) ---
 builder.Services.Configure<ForwardedHeadersOptions>(opts =>
 {
     opts.ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor;
     opts.RequireHeaderSymmetry = false;
-    opts.ForwardLimit = null; // proxy 
+    opts.ForwardLimit = null; 
 });
 
 var app = builder.Build();
 
 
-app.UseForwardedHeaders();
-
-// Railway’de DB auto-migrate
+// Database migration
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
+
+
+app.UseForwardedHeaders();
 
 
 if (app.Environment.IsDevelopment())
@@ -99,23 +92,17 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseExceptionHandler("/error");
+    app.UseExceptionHandler("/error"); 
     app.UseHsts();
 }
 
-
+// HTTPS yönlendirme + CORS
 app.UseHttpsRedirection();
-
-
 app.UseCors(CorsPolicy);
-
-
-app.UseCookiePolicy();
 
 app.UseAuthorization();
 
 app.MapControllers();
-
 
 app.MapGet("/health", () => "OK");
 
