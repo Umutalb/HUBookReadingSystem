@@ -6,13 +6,10 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
-
-// --- DB (PostgreSQL / Railway) ---
+// --- Database (PostgreSQL / Railway) ---
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connectionString));
@@ -32,7 +29,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// --- CORS (Cookie ile, Netlify prod + local) ---
+// --- CORS (With cookies, Netlify prod + local) ---
 const string CorsPolicy = "AppCors";
 var staticOrigins = new[]
 {
@@ -73,7 +70,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(opts =>
 
 var app = builder.Build();
 
-
 // Database migration
 using (var scope = app.Services.CreateScope())
 {
@@ -81,9 +77,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
-
 app.UseForwardedHeaders();
-
 
 if (app.Environment.IsDevelopment())
 {

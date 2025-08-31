@@ -1,39 +1,39 @@
-# Base runtime görüntüsü
+# Base runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# Build görüntüsü
+# Build image
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# Proje dosyasını kopyala ve restore et
+# Copy project file and restore
 COPY ["HUBookReadingSystem/HUBookReadingSystem.csproj", "HUBookReadingSystem/"]
 RUN dotnet restore "HUBookReadingSystem/HUBookReadingSystem.csproj"
 
-# Kaynak kodunu kopyala
+# Copy source code
 COPY . .
 WORKDIR "/src/HUBookReadingSystem"
 
-# Projeyi build et
+# Build the project
 RUN dotnet build "HUBookReadingSystem.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# Publish aşaması
+# Publish stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "HUBookReadingSystem.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# Final görüntü
+# Final image
 FROM base AS final
 WORKDIR /app
 
-# Non-root user oluştur ve kullan
+# Create and use non-root user
 RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
 USER appuser
 
-# Published dosyaları kopyala
+# Copy published files
 COPY --from=publish /app/publish .
 
 # Entry point
