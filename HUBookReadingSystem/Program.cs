@@ -28,7 +28,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Hazal & Umut Book Reading API",
         Version = "v1",
-        Description = "Kitap okuma takip sistemi"
+        Description = "Book reading tracking system"
     });
 });
 
@@ -96,7 +96,7 @@ else
     app.UseHsts();
 }
 
-// HTTPS yönlendirme + CORS
+// HTTPS + CORS
 app.UseHttpsRedirection();
 app.UseCors(CorsPolicy);
 
